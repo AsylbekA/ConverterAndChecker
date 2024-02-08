@@ -1,0 +1,25 @@
+﻿@model UploadedFilesViewModel
+
+<h2>Uploaded Files</h2>
+
+@if (Model != null && Model.PdfFiles.Any())
+{
+    <h3>PDF Files:</h3>
+    <ul>
+        @foreach (var pdfFile in Model.PdfFiles)
+        {
+            <li>@pdfFile</li>
+        }
+    </ul>
+}
+
+@if (Model != null && Model.ExcelFiles.Any())
+{
+    <h3>Excel Files:</h3>
+    <ul>
+        @foreach (var excelFile in Model.ExcelFiles)
+        {
+            <li>@excelFile</li>
+        }
+    </ul>
+}
