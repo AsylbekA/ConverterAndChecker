@@ -1,142 +1,181 @@
 ﻿using ConverterAndChecker.Models;
-using iTextSharp.text.pdf.parser;
 using iTextSharp.text.pdf;
+using iTextSharp.text.pdf.parser;
 using Microsoft.AspNetCore.Mvc;
+using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using OfficeOpenXml;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace ConverterAndChecker.Controllers
+namespace ConverterAndChecker.Controllers;
+
+public class HomeController : Controller
 {
-    public class HomeController : Controller
+    private readonly ILogger<HomeController> _logger;
+
+    private DateTime StartDate { get; set; }
+    private DateTime EndDate { get; set; }
+
+    public HomeController(ILogger<HomeController> logger)
     {
-        private readonly ILogger<HomeController> _logger;
+        _logger = logger;
+    }
 
-        public HomeController(ILogger<HomeController> logger)
+    public IActionResult Index()
+    {
+        return View();
+    }
+
+    public IActionResult Privacy()
+    {
+        return View();
+    }
+
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
+    {
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+
+
+    // GET: /Home/Upload
+    public IActionResult Upload()
+    {
+        return View();
+    }
+
+    // POST: /Home/Upload
+    [HttpPost]
+    public IActionResult Upload(UploadViewModel model)
+    {
+        // Handle file uploads here
+        // Access uploaded files through model.PdfFile and model.XlsxFile
+        var pdfText = ExtractTextFromPdf(model.PdfFile);
+
+
+        Dictionary<string, TableRows> keyValuePairs = new();
+
+        foreach (var val in pdfText)
         {
-            _logger = logger;
-        }
-
-        public IActionResult Index()
-        {
-            return View();
-        }
-
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
-
-
-        // GET: /Home/Upload
-        public IActionResult Upload()
-        {
-            return View();
-        }
-
-        // POST: /Home/Upload
-        [HttpPost]
-        public IActionResult Upload(UploadViewModel model)
-        {
-            // Handle file uploads here
-            // Access uploaded files through model.PdfFile and model.XlsxFile
-            var pdfText = ExtractTextFromPdf(model.PdfFile);
-            string xlsxData = ExtractDataFromXlsx(model.XlsxFile);
-
-            return RedirectToAction("Index"); // Redirect to another action after uploading
-        }
-
-
-        public List<PaymentRecord> ExtractTextFromPdf(IFormFile pdfFile)
-        {
-            StringBuilder text = new StringBuilder();
-            List<PaymentRecord> paymentRecords = new List<PaymentRecord>();
-            using (PdfReader reader = new PdfReader(pdfFile.OpenReadStream()))
+            string key = val.Fio;
+            if (keyValuePairs.ContainsKey(key))
             {
-
-                for (int page = 1; page <= reader.NumberOfPages; page++)
-                {
-                    string pageText = PdfTextExtractor.GetTextFromPage(reader, page);
-                    ParsePageText(pageText, paymentRecords);
-                }
-
+                var temp = keyValuePairs[key];
+                temp.TableRow.Add(val);
+                temp.Amount += val.Amount;
             }
-
-            return paymentRecords;
-        }
-
-        private void ParsePageText(string pageText, List<PaymentRecord> paymentRecords)
-        {
-            // Define regular expression patterns to match rows of the table and period information
-            Regex rowPattern = new Regex(@"^\d+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+([\d,.]+)\s*$", RegexOptions.Multiline);
-            Regex headerPattern = new Regex(@"№\s+п/п\s+Фамилия\s+Имя\s+Отчество\s+ИИН\s+Сумма\s*$");
-            Regex periodPattern = new Regex(@"Период\s*:\s*([\d.]+)\s*-\s*([\d.]+)");
-
-            // Find header, rows of the table, and period information
-            Match headerMatch = headerPattern.Match(pageText);
-            MatchCollection rowMatches = rowPattern.Matches(pageText);
-            Match periodMatch = periodPattern.Match(pageText);
-
-            // Determine the start and end index of the table
-            int tableStartIndex = headerMatch.Index + headerMatch.Length;
-            int tableEndIndex = rowMatches.Count > 0 ? rowMatches[rowMatches.Count - 1].Index + rowMatches[rowMatches.Count - 1].Length : pageText.Length;
-
-            // Extract rows of the table
-            string tableText = pageText.Substring(tableStartIndex, tableEndIndex - tableStartIndex);
-
-            // Split the table text into rows
-            string[] rows = tableText.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-
-            // Extract period information
-            string periodStart = periodMatch.Groups[1].Value;
-            string periodEnd = periodMatch.Groups[2].Value;
-
-            // Parse each row of the table
-            foreach (string row in rows)
+            else
             {
-                string[] rowData = row.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                // Extract data from the row and create a PaymentRecord object
-                PaymentRecord record = new PaymentRecord
-                {
-                    LastName = rowData[2],
-                    FirstName = rowData[3],
-                    MiddleName = rowData[4],
-                    IIN = rowData[5],
-                    Amount = decimal.Parse(rowData[6].Replace(",", ""))
-                };
-
-                paymentRecords.Add(record);
+                TableRows trs = new();
+                trs.TableRow = new();
+                trs.TableRow.Add(val);
+                trs.Amount = val.Amount;
+                keyValuePairs.Add(key, trs);
             }
-
-            // Output period information (for demonstration)
-            Console.WriteLine($"Period: {periodStart} - {periodEnd}");
         }
 
 
-        public string ExtractDataFromXlsx(IFormFile xlsxFile)
+
+        ExtractDataFromExcel(model.XlsxFile);
+
+        return RedirectToAction("Index"); // Redirect to another action after uploading
+    }
+
+
+    public List<TableRow> ParseTableFromPage(string pageText)
+    {
+        List<TableRow> rows = new List<TableRow>();
+
+        // Define regular expression patterns to match each row of the table
+        string pattern = @"(\d+)\s+(\p{L}+\s+\p{L}+\s+\p{L}+)\s+(\d{12})\s+(\S+)\s+([\d,]+\.\d{2})";
+        Regex regex = new Regex(pattern, RegexOptions.Multiline);
+        Regex periodPattern = new Regex(@"Период\s*:\s*([\d.]+)\s*-\s*([\d.]+)");
+
+
+        // Match rows using the regular expression pattern
+        MatchCollection matches = regex.Matches(pageText);
+        Match periodMatch = periodPattern.Match(pageText);
+
+        if (periodMatch.Captures.Count != 0)
         {
-            using (ExcelPackage package = new ExcelPackage(xlsxFile.OpenReadStream()))
+            StartDate = DateTime.Parse(periodMatch.Groups[1].Value);
+            EndDate = DateTime.Parse(periodMatch.Groups[2].Value);
+        }
+
+        // Extract data from each match and create TableRow objects
+        foreach (Match match in matches.Cast<Match>())
+        {
+            TableRow row = new();
+            row.Number = match.Groups[1].Value;
+            row.Fio = match.Groups[2].Value;
+            row.IIN = match.Groups[3].Value;
+            row.AccountNumber = match.Groups[4].Value;
+            row.Amount = Convert.ToDecimal(match.Groups[5].Value.Replace(",", "").Replace(".", ","));
+            rows.Add(row);
+        }
+
+        return rows;
+    }
+    public class TableRows
+    {
+        public Decimal Amount { get; set; }
+        public List<TableRow> TableRow { get; set; }
+    }
+
+    public class TableRow
+    {
+        public string Number { get; set; }
+        public string Fio { get; set; }
+        public string IIN { get; set; }
+        public string AccountNumber { get; set; }
+        public decimal Amount { get; set; }
+    }
+
+    public List<TableRow> ExtractTextFromPdf(IFormFile pdfFile)
+    {
+        StringBuilder tableData = new StringBuilder();
+        List<TableRow> pdfdatas = new();
+        using (PdfReader reader = new PdfReader(pdfFile.OpenReadStream()))
+        {
+            for (int pageNumber = 1; pageNumber <= reader.NumberOfPages; pageNumber++)
             {
-                ExcelWorksheet worksheet = package.Workbook.Worksheets[0]; // Assuming data is in the first worksheet
-                int rowCount = worksheet.Dimension.Rows;
-                int columnCount = worksheet.Dimension.Columns;
-                StringBuilder data = new StringBuilder();
-                for (int row = 1; row <= rowCount; row++)
+                string pageText = PdfTextExtractor.GetTextFromPage(reader, pageNumber);
+                pdfdatas.AddRange(ParseTableFromPage(pageText));
+            }
+        }
+
+        return pdfdatas;
+    }
+
+    //public void Ex
+
+    public void ExtractDataFromExcel(IFormFile excelFile)
+    {
+        using var stream = excelFile.OpenReadStream();
+        IWorkbook workbook;
+        if (excelFile.FileName.EndsWith(".xlsx"))
+            workbook = new XSSFWorkbook(stream);
+        else if (excelFile.FileName.EndsWith(".xls"))   
+            workbook = new HSSFWorkbook(stream);
+        else
+            throw new Exception("Unsupported file format.");
+
+        ISheet sheet = workbook.GetSheetAt(0); // Assuming the data is in the first sheet
+
+        // Loop through rows and columns to extract data
+        for (int row = 0; row <= sheet.LastRowNum; row++)
+        {
+            IRow currentRow = sheet.GetRow(row);
+            if (currentRow != null)
+            {
+                for (int col = 0; col < currentRow.Cells.Count; col++)
                 {
-                    for (int col = 1; col <= columnCount; col++)
-                    {
-                        data.Append(worksheet.Cells[row, col].Value?.ToString() ?? "");
-                    }
+                    Console.Write(currentRow.GetCell(col)?.ToString() + "\t");
                 }
-                return data.ToString();
+                Console.WriteLine();
             }
         }
     }
