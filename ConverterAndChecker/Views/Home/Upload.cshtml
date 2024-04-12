@@ -1,5 +1,6 @@
 ﻿@model Dictionary<string, (decimal, string, string)>
 
+
 <form id="uploadForm" method="post" enctype="multipart/form-data">
     <div>
         <label for="pdfFile">PDF File:</label>
@@ -14,35 +15,10 @@
 </form>
 
 
-@if (Model != null)
-{
-    <div>
-        <table>
-            <thead>
-                <tr>Name</tr>
-                <tr>Summ</tr>
-                <tr>Comment</tr>
-                <tr>Color</tr>
-            </thead>
-            <tbody>
-                @foreach(var val in Model){
-                    <tr>@val.Key</tr>
-                    <tr>@val.Value.Item1</tr>
-                    <tr>@val.Value.Item2</tr>
-                    <tr>@val.Value.Item3</tr>
-                }
-            </tbody>
-        </table>
-    </div>
-
-}
-
-
-
-
-
 @section scripts {
     <script>
+
+
         const submitBtn = document.getElementById('submitForm');
         const pdfFile = document.getElementById('pdfFile');
         pdfFile.addEventListener('change', (e) => {
@@ -93,64 +69,5 @@
                 body: formData
             });
         })
-
-
-                        // const upload = document.getElementById('upload');
-
-                        // upload.addEventListener('click', () => {
-                        //     // set status to uploading
-                        //     status.innerHTML = ‘uploading…’;
-
-                        //     const fileReader = new FileReader();
-                        //     fileReader.readAsArrayBuffer(file.files[0]);
-
-
-                        //     fileReader.onload = (event) => {
-                        //         console.log('Complete File read successfully!')
-                        //     }
-                        // });
-
-
-                        // $(document).ready(function checkPdfFiles() {
-                        //     console.log("Ready!");
-                        // });
-                        // function checkFiles() {
-                        //     console.log('test');
-                        //     var pdfFile = document.getElementById('pdfFile').files[0];
-                        //     var xlsxFile = document.getElementById('xlsxFile').files[0];
-                        //     var cnt = 0;
-
-                        //     if (pdfFile) {
-                        //         var pdfFileType = pdfFile.type;
-                        //         if (pdfFileType !== "application/pdf") {
-                        //             alert("Please upload a PDF file.");
-                        //             return false;
-                        //         } else {
-                        //             cnt++;
-                        //         }
-                        //     } else {
-                        //         alert("Please select a PDF file.");
-                        //         return false;
-                        //     }
-
-                        //     if (xlsxFile) {
-                        //         var xlsxFileType = xlsxFile.type;
-                        //         if (xlsxFileType !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                        //         && xlsxFileType !== "application/vnd.ms-excel") {
-                        //             alert("Please upload an Excel file.");
-                        //             return false;
-                        //         } else {
-                        //             cnt++;
-                        //         }
-                        //     } else {
-                        //         alert("Please select an Excel file.");
-                        //         return false;
-                        //     }
-
-                        //     if (cnt === 2) {
-                        //         document.getElementById('submitForm').disabled = false;
-                        //         return true;
-                        //     }
-                        // }
     </script>
 }
