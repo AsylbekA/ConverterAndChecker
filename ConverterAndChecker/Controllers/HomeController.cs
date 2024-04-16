@@ -29,10 +29,6 @@ public class HomeController : Controller
         return View();
     }
 
-    public IActionResult Privacy()
-    {
-        return View();
-    }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
@@ -40,16 +36,9 @@ public class HomeController : Controller
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
-
-    // GET: /Home/Upload
-    public IActionResult Upload()
-    {
-        return View();
-    }
-
     // POST: /Home/Upload
     [HttpPost]
-    public IActionResult Upload(UploadViewModel model)
+    public IActionResult Index(UploadViewModel model)
     {
         var pdfText = ExtractTextFromPdf(model.PdfFile);
         Dictionary<string, PdfTables> pdfKeyValuePairs = new();
@@ -142,13 +131,9 @@ public class HomeController : Controller
 
         var workbook = setExcelValue(model.XlsxFile, diffPdfExclSum);
 
-
         byte[] modifiedWorkbookBytes = GetModifiedWorkbookBytes(workbook);
 
-        // Return the modified workbook as a file download
         return File(modifiedWorkbookBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Результат по " + fileName);
-        // return View(diffPdfExclSum);
-        //return RedirectToAction("Index"); // Redirect to another action after uploading
     }
 
     public byte[] GetModifiedWorkbookBytes(IWorkbook workbook)
@@ -392,8 +377,8 @@ public class HomeController : Controller
         }
 
         // Save the changes
-        using FileStream fileStream = new(excelFile.FileName, FileMode.Create, FileAccess.Write);
-        workbook.Write(fileStream);
+       // using FileStream fileStream = new(excelFile.FileName, FileMode.Create, FileAccess.Write);
+       // workbook.Write(fileStream);
         return workbook;
     }
 
@@ -429,11 +414,11 @@ public class HomeController : Controller
         MatchCollection matches = regex.Matches(pageText);
         System.Text.RegularExpressions.Match periodMatch = periodPattern.Match(pageText);
 
-        if (periodMatch.Captures.Count != 0)
-        {
-            StartDate = DateTime.Parse(periodMatch.Groups[1].Value);
-            EndDate = DateTime.Parse(periodMatch.Groups[2].Value);
-        }
+        //if (periodMatch.Captures.Count != 0)
+        //{
+        //    StartDate = DateTime.Parse(periodMatch.Groups[1].Value);
+        //    EndDate = DateTime.Parse(periodMatch.Groups[2].Value);
+        //}
 
         // Extract data from each match and create PdfTable objects
         foreach (System.Text.RegularExpressions.Match match in matches.Cast<System.Text.RegularExpressions.Match>())
