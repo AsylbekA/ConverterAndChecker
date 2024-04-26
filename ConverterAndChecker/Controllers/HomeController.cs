@@ -116,12 +116,13 @@ public class HomeController : Controller
                     }
                     diffPdfExclSum.Add(val.Key, (diffSum, comment, color));
                 }
-                pdfKeyValuePairs.Remove(val.Key);
             }
             else
             {
                 diffPdfExclSum.Add(val.Key, (val.Value.Amount, "Не найден клиент из Выписка, по проведенным платежам", "red"));
             }
+
+           pdfKeyValuePairs.Remove(upperkey);
         }
 
         foreach (var val in pdfKeyValuePairs)
