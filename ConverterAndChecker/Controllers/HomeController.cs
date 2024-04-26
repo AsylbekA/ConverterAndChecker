@@ -19,6 +19,9 @@ public class HomeController : Controller
     private DateTime StartDate;
     private DateTime EndDate;
 
+    string desimalString = "";
+    decimal decimalDecimal;
+
     public HomeController(ILogger<HomeController> logger)
     {
         _logger = logger;
@@ -370,9 +373,15 @@ public class HomeController : Controller
             pdfRow++;
         }
 
+        IRow roww = sheet.GetRow(pdfRow++) ?? sheet.CreateRow(pdfRow++); // Get the first row or create a new one if it doesn't exist
+        NPOI.SS.UserModel.ICell cellww = roww.GetCell(0) ?? roww.CreateCell(0);
+        cellww.SetCellValue(decimalDecimal.ToString());
+        cellww = roww.GetCell(1) ?? roww.CreateCell(1);// Get the first cell or create a new one if it doesn't exist
+        cellww.SetCellValue(desimalString);
+
         // Save the changes
-       // using FileStream fileStream = new(excelFile.FileName, FileMode.Create, FileAccess.Write);
-       // workbook.Write(fileStream);
+        // using FileStream fileStream = new(excelFile.FileName, FileMode.Create, FileAccess.Write);
+        // workbook.Write(fileStream);
         return workbook;
     }
     public void saveExcel(IFormFile XlsxFile)
@@ -419,6 +428,8 @@ public class HomeController : Controller
             row.Fio = match.Groups[2].Value;
             row.IIN = match.Groups[3].Value;
             row.AccountNumber = match.Groups[4].Value;
+            desimalString = match.Groups[5].Value;  
+            decimalDecimal = Convert.ToDecimal(match.Groups[5].Value.Replace(",", "").Replace(".", ","));
             row.Amount = Convert.ToDecimal(match.Groups[5].Value.Replace(",", "").Replace(".", ","));
             if (!String.IsNullOrEmpty(row.Fio)) row.Fio.ToUpper();
             rows.Add(row);
