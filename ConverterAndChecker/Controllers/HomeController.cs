@@ -8,6 +8,7 @@ using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace ConverterAndChecker.Controllers;
@@ -374,16 +375,6 @@ public class HomeController : Controller
             cnt++;
             pdfRow++;
         }
-
-        IRow roww = sheet.GetRow(pdfRow++) ?? sheet.CreateRow(pdfRow++); // Get the first row or create a new one if it doesn't exist
-        NPOI.SS.UserModel.ICell cellww = roww.GetCell(0) ?? roww.CreateCell(0);
-        cellww.SetCellValue(firstReplase);
-        cellww = roww.GetCell(1) ?? roww.CreateCell(1);// Get the first cell or create a new one if it doesn't exist
-        cellww.SetCellValue(secondReplase);
-
-        // Save the changes
-        // using FileStream fileStream = new(excelFile.FileName, FileMode.Create, FileAccess.Write);
-        // workbook.Write(fileStream);
         return workbook;
     }
     public void saveExcel(IFormFile XlsxFile)
@@ -431,10 +422,18 @@ public class HomeController : Controller
             row.IIN = match.Groups[3].Value;
             row.AccountNumber = match.Groups[4].Value;
             desimalString = match.Groups[5].Value;
-            firstReplase = match.Groups[5].Value.Replace(",", "");
-            secondReplase = firstReplase.Replace(".", ",");
-            decimalDecimal = Convert.ToDecimal(secondReplase);
-            row.Amount = decimalDecimal;
+
+            firstReplase = match.Groups[6].Value;
+            // Define culture info with appropriate settings
+            CultureInfo culture = new CultureInfo("en-US");
+
+            // Specify NumberStyles to handle commas and periods
+            NumberStyles style = NumberStyles.AllowDecimalPoint | NumberStyles.AllowThousands;
+
+            // Convert string to decimal
+            decimal result = decimal.Parse(desimalString, NumberStyles.AllowDecimalPoint | NumberStyles.AllowThousands, CultureInfo.InvariantCulture);
+            secondReplase = result.ToString();
+            row.Amount = result;
             if (!String.IsNullOrEmpty(row.Fio)) row.Fio.ToUpper();
             rows.Add(row);
         }
