@@ -23,19 +23,16 @@ public class HomeController : Controller
     {
         _logger = logger;
     }
-
     public IActionResult Index()
     {
         return View();
     }
-
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
-
     // POST: /Home/Upload
     [HttpPost]
     public IActionResult Index(UploadViewModel model)
@@ -136,7 +133,6 @@ public class HomeController : Controller
 
         return File(modifiedWorkbookBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Результат по " + fileName);
     }
-
     public byte[] GetModifiedWorkbookBytes(IWorkbook workbook)
     {
         // Create a memory stream to store the workbook data
@@ -151,9 +147,6 @@ public class HomeController : Controller
             return workbookBytes;
         }
     }
-
-
-
     public IWorkbook setExcelValue(IFormFile excelFile, Dictionary<string, (decimal, string, string)> diffPdfExclSum)
     {
         using var stream = excelFile.OpenReadStream();
@@ -382,8 +375,6 @@ public class HomeController : Controller
        // workbook.Write(fileStream);
         return workbook;
     }
-
-
     public void saveExcel(IFormFile XlsxFile)
     {
 
@@ -400,7 +391,6 @@ public class HomeController : Controller
 
         FileInfo inputFile = new FileInfo(XlsxFile.FileName);
     }
-
     public List<PdfTable> ParseTableFromPage(string pageText)
     {
         List<PdfTable> rows = new();

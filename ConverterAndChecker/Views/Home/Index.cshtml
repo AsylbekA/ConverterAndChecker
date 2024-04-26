@@ -2,16 +2,19 @@
 
 
 <form id="uploadForm" method="post" enctype="multipart/form-data">
-    <div>
-        <label for="pdfFile">PDF File:</label>
-        <input type="file" id="pdfFile" name="pdfFile" accept=".pdf" />
+    <div style="display: flex; justify-content: space-between">
+        <div>
+            <label for="pdfFile">Загрузитe PDF-файл:</label>
+            <input type="file" id="pdfFile" name="pdfFile" accept=".pdf" />
+        </div>
+        <div>
+            <label for="xlsxFile">Загрузитe Excel-файл:</label>
+            <input type="file" id="xlsxFile" name="xlsxFile" accept=".xlsx,.xls" />
+        </div>
     </div>
-    <div>
-        <label for="xlsxFile">Excel File:</label>
-        <input type="file" id="xlsxFile" name="xlsxFile" accept=".xlsx,.xls" />
+    <div style="display: flex; justify-content: center">
+        <button id="submitForm" disabled type="submit">Сравнить файлы</button>
     </div>
-
-    <button id="submitForm" disabled type="submit">Upload Files</button>
 </form>
 
 
@@ -26,7 +29,7 @@
             if (pdf) {
                 var pdfFileType = pdf.type;
                 if (pdfFileType !== "application/pdf") {
-                    alert("Please upload a PDF file.");
+                    alert("Пожалуйста, выберите PDF-файл.");
                     pdfFile.value = "";
                     submitBtn.disabled = true;
                 } else {
@@ -35,7 +38,7 @@
                     }
                 }
             } else {
-                alert("Please select a PDF file.");
+                alert("Пожалуйста, выберите PDF-файл.");
             }
         });
 
@@ -46,7 +49,7 @@
                 var xlsxFileType = xlsx.type;
                 if (xlsxFileType !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     && xlsxFileType !== "application/vnd.ms-excel") {
-                    alert("Please upload an Excel file.");
+                    alert("Пожалуйста, загрузите Excel-файл.");
                     xlsxFile.value = "";
                     submitBtn.disabled = true;
                 } else {
@@ -55,19 +58,23 @@
                     }
                 }
             } else {
-                alert("Please select an Excel file.");
+                alert("Пожалуйста, загрузите Excel-файл.");
             }
         });
 
         submitBtn.addEventListener('click', async () => {
             const formData = new FormData();
-            formData.append(pdfFile.files[0]);
-            formData.append(xlsxFile.files[0]);
-
+            var pdf = pdfFile.files[0];
+            formData.append('pdfFile', pdf); // Specify the name 'pdfFile'
+            var excel = xlsxFile.files[0];
+            formData.append('xlsxFile', excel); // Specify the name 'xlsxFile'
             const response = await fetch("/Home/Upload", {
                 method: 'POST',
                 body: formData
             });
-        })
+            pdfFile.value = '';
+            xlsxFile.value = '';
+        });
+
     </script>
 }
