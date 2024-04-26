@@ -21,6 +21,8 @@ public class HomeController : Controller
 
     string desimalString = "";
     decimal decimalDecimal;
+    string firstReplase;
+    string secondReplase;
 
     public HomeController(ILogger<HomeController> logger)
     {
@@ -375,9 +377,9 @@ public class HomeController : Controller
 
         IRow roww = sheet.GetRow(pdfRow++) ?? sheet.CreateRow(pdfRow++); // Get the first row or create a new one if it doesn't exist
         NPOI.SS.UserModel.ICell cellww = roww.GetCell(0) ?? roww.CreateCell(0);
-        cellww.SetCellValue(decimalDecimal.ToString());
+        cellww.SetCellValue(firstReplase);
         cellww = roww.GetCell(1) ?? roww.CreateCell(1);// Get the first cell or create a new one if it doesn't exist
-        cellww.SetCellValue(desimalString);
+        cellww.SetCellValue(secondReplase);
 
         // Save the changes
         // using FileStream fileStream = new(excelFile.FileName, FileMode.Create, FileAccess.Write);
@@ -428,9 +430,11 @@ public class HomeController : Controller
             row.Fio = match.Groups[2].Value;
             row.IIN = match.Groups[3].Value;
             row.AccountNumber = match.Groups[4].Value;
-            desimalString = match.Groups[5].Value;  
-            decimalDecimal = Convert.ToDecimal(match.Groups[5].Value.Replace(",", "").Replace(".", ","));
-            row.Amount = Convert.ToDecimal(match.Groups[5].Value.Replace(",", "").Replace(".", ","));
+            desimalString = match.Groups[5].Value;
+            firstReplase = match.Groups[5].Value.Replace(",", "");
+            secondReplase = firstReplase.Replace(".", ",");
+            decimalDecimal = Convert.ToDecimal(secondReplase);
+            row.Amount = decimalDecimal;
             if (!String.IsNullOrEmpty(row.Fio)) row.Fio.ToUpper();
             rows.Add(row);
         }
