@@ -1,9 +1,12 @@
+using ConverterAndChecker.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddScoped<ConverterService>();
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages()
-    .AddRazorRuntimeCompilation();
+//builder.Services.AddRazorPages();
+    //.AddRazorRuntimeCompilation();
 
 var app = builder.Build();
 
