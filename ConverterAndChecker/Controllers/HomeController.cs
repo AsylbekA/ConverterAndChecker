@@ -41,26 +41,31 @@ public class HomeController : Controller
     [HttpPost]
     public IActionResult Index(UploadViewModel model)
     {
-        var pdfText = _converer.ExtractTextFromPdf(model.PdfFile);
         Dictionary<string, PdfTables> pdfKeyValuePairs = new();
-        foreach (var val in pdfText)
+        for (int i=0; i<2;i++)
         {
-            string key = val.IIN;
-            if (pdfKeyValuePairs.ContainsKey(key))
+            var pdfText = _converer.ExtractTextFromPdf(model.PdfFile,i);
+            foreach (var val in pdfText)
             {
-                var temp = pdfKeyValuePairs[key];
-                temp.PdfTable.Add(val);
-                temp.Amount += val.Amount;
+                string key = val.IIN;
+                if (pdfKeyValuePairs.ContainsKey(key))
+                {
+                    var temp = pdfKeyValuePairs[key];
+                    temp.PdfTable.Add(val);
+                    temp.Amount += val.Amount;
+                }
+                else
+                {
+                    PdfTables trs = new();
+                    trs.PdfTable = new();
+                    trs.PdfTable.Add(val);
+                    trs.Amount = val.Amount;
+                    pdfKeyValuePairs.Add(key, trs);
+                }
             }
-            else
-            {
-                PdfTables trs = new();
-                trs.PdfTable = new();
-                trs.PdfTable.Add(val);
-                trs.Amount = val.Amount;
-                pdfKeyValuePairs.Add(key, trs);
-            }
+
         }
+       
 
         var excelRow = _converer.ExtractInshuranceFromExcel(model.XlsxFile);
 
@@ -85,8 +90,10 @@ public class HomeController : Controller
         }
 
 
-        var stream = _converer.SetExcelInshurance(ExcelKeyValuePairs, pdfKeyValuePairs);
-        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Результат по " + model.XlsxFile.FileName);
+       // var stream = _converer.SetExcelInshurance(ExcelKeyValuePairs, pdfKeyValuePairs);
+        var stream = _converer.SetExcelOPV(ExcelKeyValuePairs, pdfKeyValuePairs);
+         
+        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Результат по " + model.XlsxFile.FileName + " НПФ" + ".xlsx");
         //var workbook = _converer.setExcelValue(model.XlsxFile, diffPdfExclSum);
 
         //byte[] modifiedWorkbookBytes = _converer.GetModifiedWorkbookBytes(workbook);
