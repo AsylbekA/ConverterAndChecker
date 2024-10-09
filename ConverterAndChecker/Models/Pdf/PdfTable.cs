@@ -7,4 +7,5 @@ public class PdfTable
     public string IIN { get; set; }
     public string AccountNumber { get; set; }
     public decimal Amount { get; set; }
+    public string Date { get; set; }
 }

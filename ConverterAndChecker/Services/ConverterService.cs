@@ -11,6 +11,7 @@ using ConverterAndChecker.Models.Excel;
 using OfficeOpenXml;
 using System.Drawing;
 using OfficeOpenXml.Style;
+using NPOI.SS.Formula.Functions;
 
 namespace ConverterAndChecker.Services
 {
@@ -24,6 +25,19 @@ namespace ConverterAndChecker.Services
         decimal decimalDecimal;
         string firstReplase;
         string secondReplase;
+
+
+
+        const int RowNumber =1 ;
+        const int RowFio = 2;
+        const int RowIIN = 3; 
+        const int RowRB = 4;
+        const int Row515A = 5;
+        const int RowDiffer = 6;
+        const int RowSum515A = 7; 
+        const int RowReason = 8;
+        static Queue<string> headerQueue =  new Queue<string>();
+        static  string accountNumber = "";
         public List<PdfTable> ExtractTextFromPdf(IFormFile pdfFile,int cnt)
         {
             List<PdfTable> pdfdatas = new();
@@ -51,45 +65,54 @@ namespace ConverterAndChecker.Services
 
             // Define regular expression patterns to match each row of the table
             string pattern = @"(\d+)\s+(\p{L}+\s+\p{L}+\s+\p{L}+)\s+(\d{12})\s+([\d,]+\.\d{2})";
-            //string pattern = @"(\d+)\s+(\p{L}+\s+\p{L}+\s+\p{L}+)\s+(\d{12})\s+(\S+)\s+([\d,]+\.\d{2})";
-            //string pattern = @"(\d+)\s+([\p{Cyrillic}]+\s+[\p{Cyrillic}]+\s+[\p{Cyrillic}]+)\s+(\d{12})\s+(\S+)\s+([\d,]+\.\d{2})";
+            string patternHeader  = @"(\d{2}\.\d{2}\.\d{4})\s+(\d{7}/\d{2}-\d{4})";
+
+
+
+
 
             Regex regex = new(pattern, RegexOptions.Multiline);
+            Regex regexHeader = new(patternHeader, RegexOptions.Multiline);
             Regex periodPattern = new(@"Период\s*:\s*([\d.]+)\s*-\s*([\d.]+)");
 
 
             // Match rows using the regular expression pattern
             MatchCollection matches = regex.Matches(pageText);
-            //System.Text.RegularExpressions.Match periodMatch = periodPattern.Match(pageText);
 
-            //if (periodMatch.Captures.Count != 0)
-            //{
-            //    StartDate = DateTime.Parse(periodMatch.Groups[1].Value);
-            //    EndDate = DateTime.Parse(periodMatch.Groups[2].Value);
-            //}
+            MatchCollection matchesHeader = regexHeader.Matches(pageText);
 
-            // Extract data from each match and create PdfTable objects
-            foreach (System.Text.RegularExpressions.Match match in matches.Cast<System.Text.RegularExpressions.Match>())
+           
+
+            foreach (System.Text.RegularExpressions.Match match in matchesHeader.Cast<System.Text.RegularExpressions.Match>())
+            {
+                headerQueue.Enqueue("Счет: " +  match.Groups[2].Value + "  дата: " +  match.Groups[1].Value);
+            }
+
+           
+                foreach (System.Text.RegularExpressions.Match match in matches.Cast<System.Text.RegularExpressions.Match>())
             {
                 PdfTable row = new();
                 row.Number = match.Groups[1].Value;
+                
+                if (row.Number == "1")
+                {
+                    var isSuccess = headerQueue.TryDequeue(out var res);
+                    if (isSuccess) accountNumber = res;
+                }
+               
+                row.Number = match.Groups[1].Value;
                 row.Fio = match.Groups[2].Value;
                 row.IIN = match.Groups[3].Value;
-                //row.AccountNumber = match.Groups[4].Value;
                 desimalString = match.Groups[4].Value;
-
-                //firstReplase = match.Groups[6].Value;
-                // Define culture info with appropriate settings
+                row.AccountNumber = accountNumber + " Cумма: " + desimalString;
                 CultureInfo culture = new CultureInfo("en-US");
 
-                // Specify NumberStyles to handle commas and periods
+
                 NumberStyles style = NumberStyles.AllowDecimalPoint | NumberStyles.AllowThousands;
 
-                // Convert string to decimal
                 decimal result = decimal.Parse(desimalString, NumberStyles.AllowDecimalPoint | NumberStyles.AllowThousands, CultureInfo.InvariantCulture);
                 secondReplase = result.ToString();
                 row.Amount = result;
-                if (!String.IsNullOrEmpty(row.Fio)) row.Fio.ToUpper();
                 rows.Add(row);
             }
 
@@ -102,45 +125,50 @@ namespace ConverterAndChecker.Services
 
             // Define regular expression patterns to match each row of the table
             string pattern = @"(\d+)\s+(\p{L}+\s+\p{L}+)\s+(\d{12})\s+([\d,]+\.\d{2})";
-            //string pattern = @"(\d+)\s+(\p{L}+\s+\p{L}+\s+\p{L}+)\s+(\d{12})\s+(\S+)\s+([\d,]+\.\d{2})";
-            //string pattern = @"(\d+)\s+([\p{Cyrillic}]+\s+[\p{Cyrillic}]+\s+[\p{Cyrillic}]+)\s+(\d{12})\s+(\S+)\s+([\d,]+\.\d{2})";
+            string patternHeader = @"(\d{2}\.\d{2}\.\d{4})\s+(\d{7}/\d{2}-\d{4})";
+
+
+
 
             Regex regex = new(pattern, RegexOptions.Multiline);
+            Regex regexHeader = new(patternHeader, RegexOptions.Multiline);
             Regex periodPattern = new(@"Период\s*:\s*([\d.]+)\s*-\s*([\d.]+)");
 
 
             // Match rows using the regular expression pattern
             MatchCollection matches = regex.Matches(pageText);
-            //System.Text.RegularExpressions.Match periodMatch = periodPattern.Match(pageText);
 
-            //if (periodMatch.Captures.Count != 0)
-            //{
-            //    StartDate = DateTime.Parse(periodMatch.Groups[1].Value);
-            //    EndDate = DateTime.Parse(periodMatch.Groups[2].Value);
-            //}
+            MatchCollection matchesHeader = regexHeader.Matches(pageText);
 
-            // Extract data from each match and create PdfTable objects
+
+
+            foreach (System.Text.RegularExpressions.Match match in matchesHeader.Cast<System.Text.RegularExpressions.Match>())
+            {
+                headerQueue.Enqueue("Счет: " + match.Groups[3].Value + "  дата: " + match.Groups[2].Value);
+            }
+
             foreach (System.Text.RegularExpressions.Match match in matches.Cast<System.Text.RegularExpressions.Match>())
             {
                 PdfTable row = new();
                 row.Number = match.Groups[1].Value;
+
+                if (row.Number == "1")
+                {
+                    var isSuccess= headerQueue.TryDequeue(out var res);
+                    if (isSuccess) accountNumber = res;
+                }
+
+                row.Number = match.Groups[1].Value;
                 row.Fio = match.Groups[2].Value;
                 row.IIN = match.Groups[3].Value;
-                //row.AccountNumber = match.Groups[4].Value;
                 desimalString = match.Groups[4].Value;
-
-                //firstReplase = match.Groups[6].Value;
-                // Define culture info with appropriate settings
-                CultureInfo culture = new CultureInfo("en-US");
-
-                // Specify NumberStyles to handle commas and periods
+                row.AccountNumber = accountNumber + " Cумма: " + desimalString;
+                CultureInfo culture = new CultureInfo("en-US"); 
                 NumberStyles style = NumberStyles.AllowDecimalPoint | NumberStyles.AllowThousands;
 
-                // Convert string to decimal
                 decimal result = decimal.Parse(desimalString, NumberStyles.AllowDecimalPoint | NumberStyles.AllowThousands, CultureInfo.InvariantCulture);
                 secondReplase = result.ToString();
                 row.Amount = result;
-                //if (!String.IsNullOrEmpty(row.Fio)) row.Fio;
                 rows.Add(row);
             }
 
@@ -358,6 +386,7 @@ namespace ConverterAndChecker.Services
                 row.Fio = match.Groups[2].Value;
                 row.IIN = match.Groups[3].Value;
                 row.AccountNumber = match.Groups[4].Value;
+                row.Date = match.Groups[10].Value;
                 desimalString = match.Groups[5].Value;
 
                 firstReplase = match.Groups[6].Value;
@@ -839,15 +868,18 @@ namespace ConverterAndChecker.Services
                 var worksheet = package.Workbook.Worksheets.Add("Sheet1");
 
                 // Add header
-                worksheet.Cells[1, 1].Value = "№ п/п";
-                worksheet.Cells[1, 2].Value = "Фамилия Имя Отчество";
-                worksheet.Cells[1, 3].Value = "ИИН";
-                worksheet.Cells[1, 4].Value = "Сумма РВ";
-                worksheet.Cells[1, 5].Value = "Сумма 5-15А";
-                worksheet.Cells[1, 6].Value = "Розница";
-                worksheet.Cells[1, 7].Value = "Причина";
 
-                using (var headerRange = worksheet.Cells[1, 1, 1, 7])
+
+                worksheet.Cells[1, RowNumber].Value = "№ п/п";
+                worksheet.Cells[1, RowFio].Value = "Фамилия Имя Отчество";
+                worksheet.Cells[1, RowIIN].Value = "ИИН";
+                worksheet.Cells[1, RowRB].Value = "Сумма РВ";
+                worksheet.Cells[1, Row515A].Value = "Общая сумма 5-15А";
+                worksheet.Cells[1, RowDiffer].Value = "Розница";
+                worksheet.Cells[1, RowSum515A].Value = "Сумма 5-15А в разделе платежам";
+                worksheet.Cells[1, RowReason].Value = "Причина";
+
+                using (var headerRange = worksheet.Cells[1, 1, 1, RowReason])
                 {
                     headerRange.Style.Font.Color.SetColor(Color.Black); // Черный цвет шрифта
                     headerRange.Style.Font.Bold = true; // Жирный шрифт
@@ -863,20 +895,21 @@ namespace ConverterAndChecker.Services
                 foreach (var val in excelKeyValuePairs)
                 {
                     string upperkey = val.Key.ToUpper();
-                    worksheet.Cells[row, 1].Value = val.Value.ExcelRow[0].Number;
+                    worksheet.Cells[row, RowNumber].Value = val.Value.ExcelRow[0].Number;
                     if (val.Value.ExcelRow.Count > 1)
                     {
-                        worksheet.Cells[row, 1].Value = val.Value.ExcelRow[0].Number + " и " + val.Value.ExcelRow[1].Number;
+                        worksheet.Cells[row, RowNumber].Value = val.Value.ExcelRow[0].Number + " и " + val.Value.ExcelRow[1].Number;
                     }
-                    worksheet.Cells[row, 2].Value = val.Value.ExcelRow[0].Fio;
-                    worksheet.Cells[row, 3].Value = val.Key;
-                    worksheet.Cells[row, 4].Value = val.Value.Amount;
+                    worksheet.Cells[row, RowFio].Value = val.Value.ExcelRow[0].Fio;
+                    worksheet.Cells[row, RowIIN].Value = val.Key;
+                    worksheet.Cells[row, RowRB].Value = val.Value.Amount;
                     string color;
                     if (pdfKeyValuePairs.ContainsKey(upperkey))
                     {
                         var temp = pdfKeyValuePairs[upperkey];
 
                         worksheet.Cells[row, 5].Value = temp.Amount;
+                        worksheet.Cells[row, 7].Value = temp.FullInfo;
                         if (!diffPdfExclSum.ContainsKey(upperkey))
                         {
                             decimal diffSum = val.Value.Amount - temp.Amount;
@@ -888,29 +921,31 @@ namespace ConverterAndChecker.Services
                                 comment = "Сумма из РВ повышает сумму из 5-15А, по проведенным платежам.  Розница повышение = " + diffSum;
                                 color = "yellow";
                                 worksheet.Cells[row, 6, row, 6].Style.Font.Color.SetColor(Color.Black);
+                                worksheet.Cells[row, 8, row, 8].Style.Font.Color.SetColor(Color.Black);
                             }
                             else if (diffSum < 0)
                             {
                                 comment = "Сумма из 5-15А недостаточно на сумму РВ.  Недостаточная сумма = " + diffSum;
                                 color = "darkyellow";
                                 worksheet.Cells[row, 6, row, 6].Style.Font.Color.SetColor(Color.DarkOrange);
+                                worksheet.Cells[row, 8, row, 8].Style.Font.Color.SetColor(Color.DarkOrange);
                             }
                             else
                             {
                                 comment = "";
                                 color = "green";
-                                worksheet.Cells[row, 6, row, 6].Style.Font.Color.SetColor(Color.Green);
+                                worksheet.Cells[row, 1, row, 8].Style.Font.Color.SetColor(Color.Green);
                             }
                             worksheet.Cells[row, 6].Value = diffSum;
-                            worksheet.Cells[row, 7].Value = comment;
+                            worksheet.Cells[row, 8].Value = comment;
                             diffPdfExclSum.Add(val.Key, (diffSum, comment, color));
                         }
                     }
                     else
                     {
-                        worksheet.Cells[row, 7].Value = "Не найден клиент из списка 5-15А, по проведенным платежам";
+                        worksheet.Cells[row, 8].Value = "Не найден клиент из списка 5-15А, по проведенным платежам";
                         color = "red";
-                        worksheet.Cells[row, 7, row, 7].Style.Font.Color.SetColor(Color.Red);
+                        worksheet.Cells[row, 8, row, 8].Style.Font.Color.SetColor(Color.Red);
                         diffPdfExclSum.Add(val.Key, (val.Value.Amount, "Не найден клиент из Выписка, по проведенным платежам", "red"));
                     }
 
@@ -931,8 +966,9 @@ namespace ConverterAndChecker.Services
                     }
                     worksheet.Cells[row, 2].Value = val.Value.PdfTable[0].Fio;
                     worksheet.Cells[row, 3].Value = val.Key;
-                    worksheet.Cells[row, 5].Value = val.Value.Amount;
-                    worksheet.Cells[row, 7].Value = "Не найден клиент из списка РВ";
+                    worksheet.Cells[row, 5].Value =   val.Value.Amount;
+                    worksheet.Cells[row, 7].Value = val.Value.FullInfo;
+                    worksheet.Cells[row, 8].Value = "Не найден клиент из списка РВ";
                     diffPdfExclSum.Add(val.Key, (val.Value.Amount, "Не найден клиент из Расчетная ведомоста", "white"));
                     row++;
                 }

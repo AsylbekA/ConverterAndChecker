@@ -29,7 +29,25 @@ public class HomeController : Controller
     }
     public IActionResult Index()
     {
-        return View();
+        string pdfPath = "path/to/your/file.pdf";
+        var model = new UploadViewModel
+        {
+            PdfFile = CreateMockFile("C:\\perneke\\Пернеке ревизор документы\\мед страх\\2023 Апрель.pdf"),
+            XlsxFile = CreateMockFile("C:\\perneke\\Пернеке ревизор документы\\Ведомость 2023\\2023 апрель опв.xls")
+        };
+        return Index(model);
+    }
+
+    private IFormFile CreateMockFile(string filePath)
+    {
+        var fileName = System.IO.Path.GetFileName(filePath);
+        var memoryStream = new MemoryStream(System.IO.File.ReadAllBytes(filePath));
+        var formFile = new FormFile(memoryStream, 0, memoryStream.Length, "file", fileName)
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "application/octet-stream"
+        };
+        return formFile;
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
@@ -52,6 +70,7 @@ public class HomeController : Controller
                 {
                     var temp = pdfKeyValuePairs[key];
                     temp.PdfTable.Add(val);
+                    temp.FullInfo = temp.FullInfo + "\n" +  val.AccountNumber;
                     temp.Amount += val.Amount;
                 }
                 else
@@ -60,6 +79,7 @@ public class HomeController : Controller
                     trs.PdfTable = new();
                     trs.PdfTable.Add(val);
                     trs.Amount = val.Amount;
+                    trs.FullInfo = val.AccountNumber;
                     pdfKeyValuePairs.Add(key, trs);
                 }
             }
@@ -93,7 +113,7 @@ public class HomeController : Controller
        // var stream = _converer.SetExcelInshurance(ExcelKeyValuePairs, pdfKeyValuePairs);
         var stream = _converer.SetExcelOPV(ExcelKeyValuePairs, pdfKeyValuePairs);
          
-        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Результат по " + model.XlsxFile.FileName + " НПФ" + ".xlsx");
+        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Результат по " + model.XlsxFile.Name + " НПФ" + ".xlsx");
         //var workbook = _converer.setExcelValue(model.XlsxFile, diffPdfExclSum);
 
         //byte[] modifiedWorkbookBytes = _converer.GetModifiedWorkbookBytes(workbook);
