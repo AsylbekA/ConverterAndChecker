@@ -2,6 +2,7 @@
 using ConverterAndChecker.Models.Excel;
 using ConverterAndChecker.Models.Pdf;
 using ConverterAndChecker.Services;
+using iText.Kernel.Geom;
 using iTextSharp.text.pdf;
 using iTextSharp.text.pdf.parser;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +15,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 namespace ConverterAndChecker.Controllers;
 
@@ -29,14 +31,23 @@ public class HomeController : Controller
     }
     public IActionResult Index()
     {
-        string pdfPath = "path/to/your/file.pdf";
-        var model = new UploadViewModel
-        {
-            PdfFile = CreateMockFile("C:\\perneke\\Пернеке ревизор документы\\мед страх\\2023 Апрель.pdf"),
-            XlsxFile = CreateMockFile("C:\\perneke\\Пернеке ревизор документы\\Ведомость 2023\\2023 апрель опв.xls")
-        };
-        return Index(model);
+
+        //string pdf = "2023 Март" + ".pdf";
+        //string xmlP = "2023 март.xlsx";
+
+        //string pdfPAth = "G:\\Work\\PernebekTaga\\04-10-2024\\Пернеке ревизор документы\\мед страх\\2023\\" + pdf;
+        //string xlsPath = "\"G:\\Work\\PernebekTaga\\04-10-2024\\Пернеке ревизор документы\\Ведомость 2023\\2023 март.xlsx";// + xmlP;
+        //var model = new UploadViewModel
+        //{
+            
+        //    PdfFile = CreateMockFile(pdfPAth),
+        //    XlsxFile = CreateMockFile(xlsPath)
+        //};
+        //return Index(model);
+
+        return View();
     }
+    
 
     private IFormFile CreateMockFile(string filePath)
     {
@@ -60,32 +71,52 @@ public class HomeController : Controller
     public IActionResult Index(UploadViewModel model)
     {
         Dictionary<string, PdfTables> pdfKeyValuePairs = new();
-        for (int i=0; i<2;i++)
+        List<string> itemsToCheck = new List<string>();
+    string[] s = model.TextPattern.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+        foreach (string s2 in s)
         {
-            var pdfText = _converer.ExtractTextFromPdf(model.PdfFile,i);
+            string cleanItem = s2.Replace("\"", ""); // Удаляем кавычки
+
+            // Добавляем в список
+            itemsToCheck.Add(cleanItem);
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            var pdfText = _converer.ExtractTextFromPdf(model.PdfFile, i);
+
+           
+
             foreach (var val in pdfText)
             {
-                string key = val.IIN;
-                if (pdfKeyValuePairs.ContainsKey(key))
+
+                bool containsAny = itemsToCheck.Any(item => val.ShortInfo.Contains(item));
+                
+
+                if (containsAny)
                 {
-                    var temp = pdfKeyValuePairs[key];
-                    temp.PdfTable.Add(val);
-                    temp.FullInfo = temp.FullInfo + "\n" +  val.AccountNumber;
-                    temp.Amount += val.Amount;
-                }
-                else
-                {
-                    PdfTables trs = new();
-                    trs.PdfTable = new();
-                    trs.PdfTable.Add(val);
-                    trs.Amount = val.Amount;
-                    trs.FullInfo = val.AccountNumber;
-                    pdfKeyValuePairs.Add(key, trs);
+
+                    string key = val.IIN;
+                    if (pdfKeyValuePairs.ContainsKey(key))
+                    {
+                        var temp = pdfKeyValuePairs[key];
+                        temp.PdfTable.Add(val);
+                        temp.FullInfo = temp.FullInfo + "\n" + val.AccountNumber;
+                        temp.Amount += val.Amount;
+                    }
+                    else
+                    {
+                        PdfTables trs = new();
+                        trs.PdfTable = new();
+                        trs.PdfTable.Add(val);
+                        trs.Amount = val.Amount;
+                        trs.FullInfo = val.AccountNumber;
+                        pdfKeyValuePairs.Add(key, trs);
+                    }
                 }
             }
-
         }
-       
+
 
         var excelRow = _converer.ExtractInshuranceFromExcel(model.XlsxFile);
 
@@ -110,10 +141,12 @@ public class HomeController : Controller
         }
 
 
-       // var stream = _converer.SetExcelInshurance(ExcelKeyValuePairs, pdfKeyValuePairs);
-        var stream = _converer.SetExcelOPV(ExcelKeyValuePairs, pdfKeyValuePairs);
-         
-        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Результат по " + model.XlsxFile.Name + " НПФ" + ".xlsx");
+        var stream = _converer.SetExcelInshurance(ExcelKeyValuePairs, pdfKeyValuePairs);
+        //var stream = _converer.SetExcelOPV(ExcelKeyValuePairs, pdfKeyValuePairs);
+        var name = model.XlsxFile.FileName.Replace(".xls", "");
+
+        //name = model.XlsxFile.FileName.Replace(".xlsx", "");
+        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Результат по " + name + " Мед страх" + ".xlsx");
         //var workbook = _converer.setExcelValue(model.XlsxFile, diffPdfExclSum);
 
         //byte[] modifiedWorkbookBytes = _converer.GetModifiedWorkbookBytes(workbook);

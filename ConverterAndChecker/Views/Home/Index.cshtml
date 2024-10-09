@@ -11,6 +11,10 @@
             <label for="xlsxFile">Загрузитe Excel-файл:</label>
             <input type="file" id="xlsxFile" name="xlsxFile" accept=".xlsx,.xls" />
         </div>
+        <div>
+            <label for="xlsxFile">TEXT:</label>
+            <input type="text" id="textPattern" name="textPattern" />
+        </div>
     </div>
     <div style="display: flex; justify-content: center">
         <button id="submitForm" disabled type="submit">Сравнить файлы</button>
@@ -60,18 +64,21 @@
             }
         });
 
+        const textPattern = document.getElementById('textPattern');
+
+
         submitBtn.addEventListener('click', async () => {
             const formData = new FormData();
             var pdf = pdfFile.files[0];
             formData.append('pdfFile', pdf); // Specify the name 'pdfFile'
             var excel = xlsxFile.files[0];
             formData.append('xlsxFile', excel); // Specify the name 'xlsxFile'
+            formData.append('textPattern', textPattern.value); // корректное имя
             const response = await fetch("/Home/Upload", {
                 method: 'POST',
                 body: formData
             });
-            pdfFile.value = '';
-            xlsxFile.value = '';
+        
         });
 
     </script>

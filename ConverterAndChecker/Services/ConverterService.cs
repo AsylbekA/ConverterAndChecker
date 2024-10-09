@@ -36,8 +36,12 @@ namespace ConverterAndChecker.Services
         const int RowDiffer = 6;
         const int RowSum515A = 7; 
         const int RowReason = 8;
-        static Queue<string> headerQueue =  new Queue<string>();
+        static Queue<(string,string)> headerQueue =  new Queue<(string, string)>();
         static  string accountNumber = "";
+        static string shortInfo = "";
+
+
+ 
         public List<PdfTable> ExtractTextFromPdf(IFormFile pdfFile,int cnt)
         {
             List<PdfTable> pdfdatas = new();
@@ -46,14 +50,7 @@ namespace ConverterAndChecker.Services
                 for (int pageNumber = 1; pageNumber <= reader.NumberOfPages; pageNumber++)
                 {
                     string pageText = PdfTextExtractor.GetTextFromPage(reader, pageNumber);
-                    if (cnt == 0)
-                    {
-                        pdfdatas.AddRange(ParseTableInshuranceFromPage(pageText));
-                    }
-                    else
-                    {
-                        pdfdatas.AddRange(ParseTableInshuranceFIOFromPage(pageText));
-                    }
+                    pdfdatas.AddRange(ParseTableInshuranceFromPage(pageText));
                 }
             }
             return pdfdatas;
@@ -64,8 +61,11 @@ namespace ConverterAndChecker.Services
             List<PdfTable> rows = new();
 
             // Define regular expression patterns to match each row of the table
-            string pattern = @"(\d+)\s+(\p{L}+\s+\p{L}+\s+\p{L}+)\s+(\d{12})\s+([\d,]+\.\d{2})";
-            string patternHeader  = @"(\d{2}\.\d{2}\.\d{4})\s+(\d{7}/\d{2}-\d{4})";
+             // var  pattern = new Regex(@"(\d+)\s+([\S\s]+?)\s+(\d{12})\s+([\d,]+\.\d{2})");
+            string pattern = @"(\d+)\s+((?:\p{L}+\s+)+)\s+(\d{12})\s+([\d,]+\.\d{2})";
+
+            // string patternHeader  = @"(\d{2}\.\d{2}\.\d{4})\s+(\d{7}/\d{2}-\d{4})";
+            string patternHeader = @"(\d{2}\.\d{2}\.\d{4})\s+(\d{1,}/\d{1,}-\d{1,})";
 
 
 
@@ -85,10 +85,11 @@ namespace ConverterAndChecker.Services
 
             foreach (System.Text.RegularExpressions.Match match in matchesHeader.Cast<System.Text.RegularExpressions.Match>())
             {
-                headerQueue.Enqueue("Счет: " +  match.Groups[2].Value + "  дата: " +  match.Groups[1].Value);
+                string str1 = "Счет: " + match.Groups[2].Value + "  дата: " + match.Groups[1].Value;
+                string str2 = match.Groups[1].Value + " " + match.Groups[2].Value;
+                headerQueue.Enqueue((str1, str2));
             }
 
-           
                 foreach (System.Text.RegularExpressions.Match match in matches.Cast<System.Text.RegularExpressions.Match>())
             {
                 PdfTable row = new();
@@ -97,14 +98,42 @@ namespace ConverterAndChecker.Services
                 if (row.Number == "1")
                 {
                     var isSuccess = headerQueue.TryDequeue(out var res);
-                    if (isSuccess) accountNumber = res;
+                    if (isSuccess)
+                    {
+                        accountNumber = res.Item1;
+                        shortInfo = res.Item2;
+                    }
+                }
+                row.Number = match.Groups[1].Value;
+                if (match.Groups.Count==3)
+                {
+                    row.Fio = match.Groups[2].Value;
+                    row.IIN = match.Groups[3].Value;
+                    desimalString = match.Groups[4].Value;
+                    row.AccountNumber = accountNumber + " Cумма: " + desimalString;
+                    row.ShortInfo = shortInfo;
+                }else if (match.Groups.Count == 4)
+                {
+                    row.Fio = match.Groups[2].Value;
+                    row.IIN = match.Groups[3].Value;
+                    desimalString = match.Groups[4].Value;
+                    row.AccountNumber = accountNumber + " Cумма: " + desimalString;
+                    row.ShortInfo = shortInfo;
+                }else if (match.Groups.Count == 5)
+                {
+                    row.Fio = match.Groups[2].Value;
+                    row.IIN = match.Groups[3].Value;
+                    desimalString = match.Groups[4].Value;
+                    row.AccountNumber = accountNumber + " Cумма: " + desimalString;
+                    row.ShortInfo = shortInfo;
+                }else if (match.Groups.Count <3 && match.Groups.Count >5)
+                {
+                    Console.WriteLine("dcds");
                 }
                
-                row.Number = match.Groups[1].Value;
-                row.Fio = match.Groups[2].Value;
-                row.IIN = match.Groups[3].Value;
-                desimalString = match.Groups[4].Value;
-                row.AccountNumber = accountNumber + " Cумма: " + desimalString;
+                
+                
+                
                 CultureInfo culture = new CultureInfo("en-US");
 
 
@@ -125,14 +154,13 @@ namespace ConverterAndChecker.Services
 
             // Define regular expression patterns to match each row of the table
             string pattern = @"(\d+)\s+(\p{L}+\s+\p{L}+)\s+(\d{12})\s+([\d,]+\.\d{2})";
-            string patternHeader = @"(\d{2}\.\d{2}\.\d{4})\s+(\d{7}/\d{2}-\d{4})";
-
+            //string patternHeader = @"(\d{2}\.\d{2}\.\d{4})\s+(\d{7}/\d{2}-\d{4})";
+            string patternHeader = @"(\d{2}\.\d{2}\.\d{4})\s+(\d{7}/\d{2}-\d{1,})";
 
 
 
             Regex regex = new(pattern, RegexOptions.Multiline);
             Regex regexHeader = new(patternHeader, RegexOptions.Multiline);
-            Regex periodPattern = new(@"Период\s*:\s*([\d.]+)\s*-\s*([\d.]+)");
 
 
             // Match rows using the regular expression pattern
@@ -144,7 +172,9 @@ namespace ConverterAndChecker.Services
 
             foreach (System.Text.RegularExpressions.Match match in matchesHeader.Cast<System.Text.RegularExpressions.Match>())
             {
-                headerQueue.Enqueue("Счет: " + match.Groups[3].Value + "  дата: " + match.Groups[2].Value);
+                string str1 = "Счет: " + match.Groups[2].Value + "  дата: " + match.Groups[1].Value;
+                string str2 = match.Groups[1].Value + " " + match.Groups[2].Value;
+                headerQueue.Enqueue((str1, str2));
             }
 
             foreach (System.Text.RegularExpressions.Match match in matches.Cast<System.Text.RegularExpressions.Match>())
@@ -154,15 +184,21 @@ namespace ConverterAndChecker.Services
 
                 if (row.Number == "1")
                 {
-                    var isSuccess= headerQueue.TryDequeue(out var res);
-                    if (isSuccess) accountNumber = res;
+                    var isSuccess = headerQueue.TryDequeue(out var res);
+                    if (isSuccess)
+                    {
+                        accountNumber = res.Item1;
+                        shortInfo = res.Item2;
+                    }
                 }
+
 
                 row.Number = match.Groups[1].Value;
                 row.Fio = match.Groups[2].Value;
                 row.IIN = match.Groups[3].Value;
                 desimalString = match.Groups[4].Value;
                 row.AccountNumber = accountNumber + " Cумма: " + desimalString;
+                row.ShortInfo = shortInfo;
                 CultureInfo culture = new CultureInfo("en-US"); 
                 NumberStyles style = NumberStyles.AllowDecimalPoint | NumberStyles.AllowThousands;
 
@@ -753,15 +789,18 @@ namespace ConverterAndChecker.Services
                 var worksheet = package.Workbook.Worksheets.Add("Sheet1");
 
                 // Add header
-                worksheet.Cells[1, 1].Value = "№ п/п";
-                worksheet.Cells[1, 2].Value = "Фамилия Имя Отчество";
-                worksheet.Cells[1, 3].Value = "ИИН";
-                worksheet.Cells[1, 4].Value = "Сумма в мед страх";
-                worksheet.Cells[1, 5].Value = "Сумма в Ведомость";
-                worksheet.Cells[1, 6].Value = "Розница";
-                worksheet.Cells[1, 7].Value = "Причина";
 
-                using (var headerRange = worksheet.Cells[1, 1, 1, 7])
+
+                worksheet.Cells[1, RowNumber].Value = "№ п/п";
+                worksheet.Cells[1, RowFio].Value = "Фамилия Имя Отчество";
+                worksheet.Cells[1, RowIIN].Value = "ИИН";
+                worksheet.Cells[1, RowRB].Value = "Сумма РВ";
+                worksheet.Cells[1, Row515A].Value = "Общая сумма 5-15А";
+                worksheet.Cells[1, RowDiffer].Value = "Розница";
+                worksheet.Cells[1, RowSum515A].Value = "Сумма 5-15А в разделе платежам";
+                worksheet.Cells[1, RowReason].Value = "Причина";
+
+                using (var headerRange = worksheet.Cells[1, 1, 1, RowReason])
                 {
                     headerRange.Style.Font.Color.SetColor(Color.Black); // Черный цвет шрифта
                     headerRange.Style.Font.Bold = true; // Жирный шрифт
@@ -777,20 +816,21 @@ namespace ConverterAndChecker.Services
                 foreach (var val in excelKeyValuePairs)
                 {
                     string upperkey = val.Key.ToUpper();
-                    worksheet.Cells[row, 1].Value = val.Value.ExcelRow[0].Number;
+                    worksheet.Cells[row, RowNumber].Value = val.Value.ExcelRow[0].Number;
                     if (val.Value.ExcelRow.Count > 1)
                     {
-                        worksheet.Cells[row, 1].Value = val.Value.ExcelRow[0].Number + " и " + val.Value.ExcelRow[1].Number;
+                        worksheet.Cells[row, RowNumber].Value = val.Value.ExcelRow[0].Number + " и " + val.Value.ExcelRow[1].Number;
                     }
-                    worksheet.Cells[row, 2].Value = val.Value.ExcelRow[0].Fio;
-                    worksheet.Cells[row, 3].Value = val.Key;
-                    worksheet.Cells[row, 5].Value = val.Value.Amount;
+                    worksheet.Cells[row, RowFio].Value = val.Value.ExcelRow[0].Fio;
+                    worksheet.Cells[row, RowIIN].Value = val.Key;
+                    worksheet.Cells[row, RowRB].Value = val.Value.Amount;
                     string color;
                     if (pdfKeyValuePairs.ContainsKey(upperkey))
                     {
                         var temp = pdfKeyValuePairs[upperkey];
 
-                        worksheet.Cells[row, 4].Value = temp.Amount;
+                        worksheet.Cells[row, 5].Value = temp.Amount;
+                        worksheet.Cells[row, 7].Value = temp.FullInfo;
                         if (!diffPdfExclSum.ContainsKey(upperkey))
                         {
                             decimal diffSum = val.Value.Amount - temp.Amount;
@@ -799,32 +839,34 @@ namespace ConverterAndChecker.Services
                             string comment;
                             if (diffSum > 0)
                             {
-                                comment = "Сумма из Расчетная ведомоста повышает сумму из Выписка по мед страх, по проведенным платежам.  Розница повышение = " + diffSum + "; Сумма из Расчетная ведомоста = " + val.Value.Amount + "; Сумма из мед страх, по проведенным платежам = " + temp.Amount;
+                                comment = "Сумма из РВ повышает сумму из 5-15А, по проведенным платежам.  Розница повышение = " + diffSum;
                                 color = "yellow";
                                 worksheet.Cells[row, 6, row, 6].Style.Font.Color.SetColor(Color.Black);
+                                worksheet.Cells[row, 8, row, 8].Style.Font.Color.SetColor(Color.Black);
                             }
                             else if (diffSum < 0)
                             {
-                                comment = "Сумма из Мед страх, по проведенным платежам нехватает на сумму  Расчетная ведомоста.  Недостаточная сумма = " + diffSum + "; Сумма из Расчетная ведомоста  = " + val.Value.Amount + "; Сумма из мед страх, по проведенным платежам = " + temp.Amount;
+                                comment = "Сумма из 5-15А недостаточно на сумму РВ.  Недостаточная сумма = " + diffSum;
                                 color = "darkyellow";
                                 worksheet.Cells[row, 6, row, 6].Style.Font.Color.SetColor(Color.DarkOrange);
+                                worksheet.Cells[row, 8, row, 8].Style.Font.Color.SetColor(Color.DarkOrange);
                             }
                             else
                             {
                                 comment = "";
                                 color = "green";
-                                worksheet.Cells[row, 6, row, 6].Style.Font.Color.SetColor(Color.Green);
+                                worksheet.Cells[row, 1, row, 8].Style.Font.Color.SetColor(Color.Green);
                             }
                             worksheet.Cells[row, 6].Value = diffSum;
-                            worksheet.Cells[row, 7].Value = comment;
+                            worksheet.Cells[row, 8].Value = comment;
                             diffPdfExclSum.Add(val.Key, (diffSum, comment, color));
                         }
                     }
                     else
                     {
-                        worksheet.Cells[row, 7].Value = "Не найден клиент из списка мед страх, по проведенным платежам";
+                        worksheet.Cells[row, 8].Value = "Не найден клиент из списка 5-15А, по проведенным платежам";
                         color = "red";
-                        worksheet.Cells[row, 7, row, 7].Style.Font.Color.SetColor(Color.Red);
+                        worksheet.Cells[row, 8, row, 8].Style.Font.Color.SetColor(Color.Red);
                         diffPdfExclSum.Add(val.Key, (val.Value.Amount, "Не найден клиент из Выписка, по проведенным платежам", "red"));
                     }
 
@@ -845,8 +887,9 @@ namespace ConverterAndChecker.Services
                     }
                     worksheet.Cells[row, 2].Value = val.Value.PdfTable[0].Fio;
                     worksheet.Cells[row, 3].Value = val.Key;
-                    worksheet.Cells[row, 4].Value = val.Value.Amount;
-                    worksheet.Cells[row, 7].Value = "Не найден клиент из списка Расчетная ведомоста";
+                    worksheet.Cells[row, 5].Value = val.Value.Amount;
+                    worksheet.Cells[row, 7].Value = val.Value.FullInfo;
+                    worksheet.Cells[row, 8].Value = "Не найден клиент из списка РВ";
                     diffPdfExclSum.Add(val.Key, (val.Value.Amount, "Не найден клиент из Расчетная ведомоста", "white"));
                     row++;
                 }
