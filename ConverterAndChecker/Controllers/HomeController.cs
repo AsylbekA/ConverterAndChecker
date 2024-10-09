@@ -39,7 +39,7 @@ public class HomeController : Controller
         //string xlsPath = "\"G:\\Work\\PernebekTaga\\04-10-2024\\Пернеке ревизор документы\\Ведомость 2023\\2023 март.xlsx";// + xmlP;
         //var model = new UploadViewModel
         //{
-            
+
         //    PdfFile = CreateMockFile(pdfPAth),
         //    XlsxFile = CreateMockFile(xlsPath)
         //};
@@ -47,7 +47,7 @@ public class HomeController : Controller
 
         return View();
     }
-    
+
 
     private IFormFile CreateMockFile(string filePath)
     {
@@ -62,7 +62,9 @@ public class HomeController : Controller
     }
 
     private static string[] itemsToCheck = new string[]
-    {"16.08.2023 2523519/23-3446", "22.08.2023 2523519/23-3498", "22.08.2023 2523519/23-3459", "23.08.2023 2523519/23-3509", "23.08.2023 2523519/23-3311", "24.08.2023 2523519/23-3474", "24.08.2023 2523519/23-3473", "25.08.2023 2523519/23-3548", "25.08.2023 2523519/23-3727", "29.08.2023 2523519/23-3868" };
+    {
+    ""
+    };
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
@@ -74,46 +76,55 @@ public class HomeController : Controller
     public IActionResult Index(UploadViewModel model)
     {
         Dictionary<string, PdfTables> pdfKeyValuePairs = new();
-       // List<string> itemsToCheck = new List<string>();
-                var pdfText = _converer.ExtractTextFromPdf(model.PdfFile);
+        var pdfText = _converer.ExtractTextFromPdf(model.PdfFile);
+        foreach (var val in pdfText)
+        {
+
+            //bool containsAny = itemsToCheck.Any(item => val.ShortInfo.Contains(item));
 
 
-        //itemsToCheck = "16.08.2023 2523519/23-3446", "22.08.2023 2523519/23-3498", "22.08.2023 2523519/23-3459", "23.08.2023 2523519/23-3509", "23.08.2023 2523519/23-3311", "24.08.2023 2523519/23-3474", "24.08.2023 2523519/23-3473", "25.08.2023 2523519/23-3548", "25.08.2023 2523519/23-3727", "29.08.2023 2523519/23-3868"
-            foreach (var val in pdfText)
+            //if (containsAny)
+            //{
+            //    string key = val.IIN;
+            //    if (pdfKeyValuePairs.ContainsKey(key))
+            //    {
+            //        var temp = pdfKeyValuePairs[key];
+            //        temp.PdfTable.Add(val);
+            //        temp.FullInfo = temp.FullInfo + "\n" + val.AccountNumber;
+            //        temp.Amount += val.Amount;
+            //    }
+            //    else
+            //    {
+            //        PdfTables trs = new();
+            //        trs.PdfTable = new();
+            //        trs.PdfTable.Add(val);
+            //        trs.Amount = val.Amount;
+            //        trs.FullInfo = val.AccountNumber;
+            //        pdfKeyValuePairs.Add(key, trs);
+            //    }
+            //}
+            string key = val.IIN;
+            if (pdfKeyValuePairs.ContainsKey(key))
             {
-
-                bool containsAny = itemsToCheck.Any(item => val.ShortInfo.Contains(item));
-                
-
-                if (containsAny)
-                {
-                if (val.IIN == "780820402389")
-                {
-                    Console.WriteLine("scdscds");
-                }
-                    string key = val.IIN;
-                    if (pdfKeyValuePairs.ContainsKey(key))
-                    {
-                        var temp = pdfKeyValuePairs[key];
-                        temp.PdfTable.Add(val);
-                        temp.FullInfo = temp.FullInfo + "\n" + val.AccountNumber;
-                        temp.Amount += val.Amount;
-                    }
-                    else
-                    {
-                        PdfTables trs = new();
-                        trs.PdfTable = new();
-                        trs.PdfTable.Add(val);
-                        trs.Amount = val.Amount;
-                        trs.FullInfo = val.AccountNumber;
-                        pdfKeyValuePairs.Add(key, trs);
-                    }
-                }
+                var temp = pdfKeyValuePairs[key];
+                temp.PdfTable.Add(val);
+                temp.FullInfo = temp.FullInfo + "\n" + val.AccountNumber;
+                temp.Amount += val.Amount;
             }
-       
+            else
+            {
+                PdfTables trs = new();
+                trs.PdfTable = new();
+                trs.PdfTable.Add(val);
+                trs.Amount = val.Amount;
+                trs.FullInfo = val.AccountNumber;
+                pdfKeyValuePairs.Add(key, trs);
+            }
+        }
 
 
-        var excelRow = _converer.ExtractInshuranceFromExcel(model.XlsxFile);
+
+        var excelRow = _converer.ExtractENPFFromExcel(model.XlsxFile);
 
         Dictionary<string, ExcelRows> ExcelKeyValuePairs = new();
         foreach (var val in excelRow)
@@ -136,12 +147,12 @@ public class HomeController : Controller
         }
 
 
-        var stream = _converer.SetExcelInshurance(ExcelKeyValuePairs, pdfKeyValuePairs);
-        //var stream = _converer.SetExcelOPV(ExcelKeyValuePairs, pdfKeyValuePairs);
+        //var stream = _converer.SetExcelInshurance(ExcelKeyValuePairs, pdfKeyValuePairs);
+        var stream = _converer.SetExcelOPV(ExcelKeyValuePairs, pdfKeyValuePairs);
         var name = model.XlsxFile.FileName.Replace(".xls", "");
 
         //name = model.XlsxFile.FileName.Replace(".xlsx", "");
-        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Результат по " + name + " Мед страх" + ".xlsx");
+        return File(stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Результат по " + name + " НПФ" + ".xlsx");
         //var workbook = _converer.setExcelValue(model.XlsxFile, diffPdfExclSum);
 
         //byte[] modifiedWorkbookBytes = _converer.GetModifiedWorkbookBytes(workbook);

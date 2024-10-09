@@ -864,7 +864,7 @@ namespace ConverterAndChecker.Services
                     }
                     else
                     {
-                        worksheet.Cells[row, 8].Value = "Не найден клиент из списка 5-15А, по проведенным платежам";
+                        worksheet.Cells[row, 8].Value = "Не найден клиент из списка 5-15А , по проведенным платежам";
                         color = "red";
                         worksheet.Cells[row, 8, row, 8].Style.Font.Color.SetColor(Color.Red);
                         diffPdfExclSum.Add(val.Key, (val.Value.Amount, "Не найден клиент из Выписка, по проведенным платежам", "red"));
@@ -917,9 +917,9 @@ namespace ConverterAndChecker.Services
                 worksheet.Cells[1, RowFio].Value = "Фамилия Имя Отчество";
                 worksheet.Cells[1, RowIIN].Value = "ИИН";
                 worksheet.Cells[1, RowRB].Value = "Сумма РВ";
-                worksheet.Cells[1, Row515A].Value = "Общая сумма 5-15А";
+                worksheet.Cells[1, Row515A].Value = "Общая сумма 5-15А НПФ";
                 worksheet.Cells[1, RowDiffer].Value = "Розница";
-                worksheet.Cells[1, RowSum515A].Value = "Сумма 5-15А в разделе платежам";
+                worksheet.Cells[1, RowSum515A].Value = "Сумма 5-15А НПФ в разделе платежам";
                 worksheet.Cells[1, RowReason].Value = "Причина";
 
                 using (var headerRange = worksheet.Cells[1, 1, 1, RowReason])
@@ -961,14 +961,14 @@ namespace ConverterAndChecker.Services
                             string comment;
                             if (diffSum > 0)
                             {
-                                comment = "Сумма из РВ повышает сумму из 5-15А, по проведенным платежам.  Розница повышение = " + diffSum;
+                                comment = "Сумма из РВ повышает сумму из 5-15А НПФ, по проведенным платежам.  Розница повышение = " + diffSum;
                                 color = "yellow";
                                 worksheet.Cells[row, 6, row, 6].Style.Font.Color.SetColor(Color.Black);
                                 worksheet.Cells[row, 8, row, 8].Style.Font.Color.SetColor(Color.Black);
                             }
                             else if (diffSum < 0)
                             {
-                                comment = "Сумма из 5-15А недостаточно на сумму РВ.  Недостаточная сумма = " + diffSum;
+                                comment = "Сумма из 5-15А НПФ недостаточно на сумму РВ.  Недостаточная сумма = " + diffSum;
                                 color = "darkyellow";
                                 worksheet.Cells[row, 6, row, 6].Style.Font.Color.SetColor(Color.DarkOrange);
                                 worksheet.Cells[row, 8, row, 8].Style.Font.Color.SetColor(Color.DarkOrange);
@@ -986,7 +986,7 @@ namespace ConverterAndChecker.Services
                     }
                     else
                     {
-                        worksheet.Cells[row, 8].Value = "Не найден клиент из списка 5-15А, по проведенным платежам";
+                        worksheet.Cells[row, 8].Value = "Не найден клиент из списка 5-15А НПФ, по проведенным платежам";
                         color = "red";
                         worksheet.Cells[row, 8, row, 8].Style.Font.Color.SetColor(Color.Red);
                         diffPdfExclSum.Add(val.Key, (val.Value.Amount, "Не найден клиент из Выписка, по проведенным платежам", "red"));
