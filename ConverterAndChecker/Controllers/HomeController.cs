@@ -61,6 +61,9 @@ public class HomeController : Controller
         return formFile;
     }
 
+    private static string[] itemsToCheck = new string[]
+    {"16.08.2023 2523519/23-3446", "22.08.2023 2523519/23-3498", "22.08.2023 2523519/23-3459", "23.08.2023 2523519/23-3509", "23.08.2023 2523519/23-3311", "24.08.2023 2523519/23-3474", "24.08.2023 2523519/23-3473", "25.08.2023 2523519/23-3548", "25.08.2023 2523519/23-3727", "29.08.2023 2523519/23-3868" };
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
@@ -71,22 +74,11 @@ public class HomeController : Controller
     public IActionResult Index(UploadViewModel model)
     {
         Dictionary<string, PdfTables> pdfKeyValuePairs = new();
-        List<string> itemsToCheck = new List<string>();
-    string[] s = model.TextPattern.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-        foreach (string s2 in s)
-        {
-            string cleanItem = s2.Replace("\"", ""); // Удаляем кавычки
+       // List<string> itemsToCheck = new List<string>();
+                var pdfText = _converer.ExtractTextFromPdf(model.PdfFile);
 
-            // Добавляем в список
-            itemsToCheck.Add(cleanItem);
-        }
 
-        for (int i = 0; i < 2; i++)
-        {
-            var pdfText = _converer.ExtractTextFromPdf(model.PdfFile, i);
-
-           
-
+        //itemsToCheck = "16.08.2023 2523519/23-3446", "22.08.2023 2523519/23-3498", "22.08.2023 2523519/23-3459", "23.08.2023 2523519/23-3509", "23.08.2023 2523519/23-3311", "24.08.2023 2523519/23-3474", "24.08.2023 2523519/23-3473", "25.08.2023 2523519/23-3548", "25.08.2023 2523519/23-3727", "29.08.2023 2523519/23-3868"
             foreach (var val in pdfText)
             {
 
@@ -95,7 +87,10 @@ public class HomeController : Controller
 
                 if (containsAny)
                 {
-
+                if (val.IIN == "780820402389")
+                {
+                    Console.WriteLine("scdscds");
+                }
                     string key = val.IIN;
                     if (pdfKeyValuePairs.ContainsKey(key))
                     {
@@ -115,7 +110,7 @@ public class HomeController : Controller
                     }
                 }
             }
-        }
+       
 
 
         var excelRow = _converer.ExtractInshuranceFromExcel(model.XlsxFile);

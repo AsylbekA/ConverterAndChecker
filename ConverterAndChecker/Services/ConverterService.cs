@@ -42,7 +42,7 @@ namespace ConverterAndChecker.Services
 
 
  
-        public List<PdfTable> ExtractTextFromPdf(IFormFile pdfFile,int cnt)
+        public List<PdfTable> ExtractTextFromPdf(IFormFile pdfFile)
         {
             List<PdfTable> pdfdatas = new();
             using (PdfReader reader = new(pdfFile.OpenReadStream()))
